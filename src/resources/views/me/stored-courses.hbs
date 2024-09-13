@@ -1,30 +1,69 @@
 <div class="mt-4">
-    <h3>My Courses</h3>
-    <table class="table">
-        <thead>
-            <tr>
-                <th scope="col">#</th>
-                <th scope="col">Name course</th>
-                <th scope="col">Level</th>
-                <th scope="col" colspan="2">Create time</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{#each course}}
-            <tr>
-                <th scope="row">{{sum @index 1}}</th>
-                <td>{{this.name}}</td>
-                <td>{{this.level}}</td>
-                <td>{{this.createdAt}}</td>
-                <td>
-                    <a href="/courses/{{this._id}}/edit" class="btn btn-link">Edit</a>
-                    <a href="" class="btn btn-link" data-bs-toggle="modal" data-id="{{this._id}}"
-                        data-bs-target="#deleteCourse">Delete</a>
-                </td>
-            </tr>
-            {{/each}}
-        </tbody>
-    </table>
+    <form method="post" action="/courses/handle-form">
+        <h3>My Courses</h3>
+        <div class="d-flex justify-content-end">
+            {{#if deletedCount}}
+            <a class="btn btn-warning btn-sm me-3" href="/me/trash/courses">Trash ({{deletedCount}})</a>
+            {{/if}}
+            <a class="btn btn-primary btn-sm" href="/courses/create">Create Course</a>
+        </div>
+        <div class="d-flex mt-3 align-items-center">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="" id="select">
+                <label class="form-check-label" for="select">
+                    Select All
+                </label>
+            </div>
+            <select class="form-select form-select-sm select-all" name="action" required>
+                <option value="">-- Choose Activity --</option>
+                <option value="delete">Delete</option>
+                <option value="edit">Edit</option>
+                <option value="restore">Restore</option>
+            </select>
+            <button class="btn btn-primary btn-sm check-all-submit-btn disabled">Perform</button>
+        </div>
+
+        <table class="table table-bordered mt-4">
+            <thead>
+                <tr>
+                    <th scope="col" colspan="2">#</th>
+                    <th scope="col">Name course &nbsp;{{{sortable 'name' _sort}}}</th>
+                    </th>
+                    <th scope="col">Level&nbsp;{{{sortable 'level' _sort}}}</th>
+                    <th scope="col" colspan="2">Create time&nbsp;{{{sortable 'create' _sort}}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each course}}
+                <tr>
+                    <td>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="courseIds[]" value="{{this._id}}">
+                        </div>
+                    </td>
+                    <th scope="row">{{sum @index 1}}</th>
+                    <td>{{this.name}}</td>
+                    <td>{{this.level}}</td>
+                    <td>{{this.createdAt}}</td>
+                    <td>
+                        <div class="d-flex">
+                            <a href="/courses/{{this._id}}/edit" class="btn btn-success btn-sm me-3">Edit</a>
+                            <a href="" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-id="{{this._id}}"
+                                data-bs-target="#deleteCourse">Delete</a>
+                        </div>
+                    </td>
+                </tr>
+                {{else}}
+                <tr>
+                    <td colspan="5" class="text-center py-4">
+                        You have not posted any courses yet!.
+                        <a href="/courses/create">Post course</a>
+                    </td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </form>
 </div>
 
 {{!-- Confirm delete --}}
@@ -56,6 +95,9 @@
     var courseId;
     var deleteForm = document.forms['delete-course-form'];
     var btnDeleteCourse = document.getElementById('btn-delete-course');
+    var checkboxAll = document.getElementById('select');
+    var courseItemCheckbox = document.querySelectorAll('input[name="courseIds[]"]');
+    var checkAllSubmitBtn = document.querySelector('.check-all-submit-btn');
 
     exampleModal.addEventListener('show.bs.modal', function (event) {
         var button = event.relatedTarget;
@@ -66,4 +108,33 @@
         deleteForm.action = '/courses/' + courseId + '?_method=DELETE';
         deleteForm.submit();
     }
+    checkboxAll.onchange = function () {
+        var isCheckedAll = this.checked;
+        courseItemCheckbox.forEach(function (checkbox) {
+            checkbox.checked = isCheckedAll;
+        });
+        renderCheckAllSubmit();
+    };
+
+    courseItemCheckbox.forEach(function (checkbox) {
+        checkbox.onchange = function () {
+            // Đếm số lượng checkbox đã được chọn
+            var checkedCount = document.querySelectorAll('input[name="courseIds[]"]:checked').length;
+            // Kiểm tra xem tất cả checkbox có được chọn hay không
+            var isCheckedAll = courseItemCheckbox.length === checkedCount;
+            // Cập nhật trạng thái của checkbox "Select All"
+            checkboxAll.checked = isCheckedAll;
+            renderCheckAllSubmit();
+        };
+    });
+
+    function renderCheckAllSubmit() {
+        var Count = document.querySelectorAll('input[name="courseIds[]"]:checked').length;
+        if (Count > 0) {
+            checkAllSubmitBtn.classList.remove('disabled');
+        } else {
+            checkAllSubmitBtn.classList.add('disabled');
+        }
+    }
+
 </script>

@@ -19,13 +19,12 @@ class CourseController {
 
     store(req, res, next) {
         // res.json(req.body)
-        const formData = req.body;
-        formData.img = `https://img.youtube.com/vi/${req.body.file}/sddefault.jpg`;
-        const course = new Course(formData);
+        req.body.img = `https://img.youtube.com/vi/${req.body.file}/sddefault.jpg`;
+        const course = new Course(req.body);
 
         course
             .save()
-            .then(() => res.redirect('/'))
+            .then(() => res.redirect('/me/stored/courses'))
             .catch((err) => next(err)); // Thêm xử lý lỗi với next()
     }
 
@@ -42,11 +41,41 @@ class CourseController {
             .then(() => res.redirect('/me/stored/courses'))
             .catch(next);
     }
-    //DELETE /course/:id
+    //DELETE /courses/:id
     destroy(req, res, next) {
+        Course.delete({ _id: req.params.id })
+            .then(() => res.redirect('back'))
+            .catch(next);
+    }
+    //DELETE /courses/:id/force
+    forceDestroy(req, res, next) {
         Course.deleteOne({ _id: req.params.id })
             .then(() => res.redirect('back'))
             .catch(next);
+    }
+    //PATCH/ courses/:id/restore
+    restore(req, res, next) {
+        Course.restore({ _id: req.params.id })
+            .then(() => res.redirect('back'))
+            .catch(next);
+    }
+
+    handleForm(req, res, next) {
+        switch (req.body.action) {
+            case 'delete':
+                Course.delete({ _id: { $in: req.body.courseIds } })
+                    .then(() => res.redirect('back'))
+                    .catch(next);
+                break;
+            case 'edit':
+                res.json(req.body);
+                break;
+            case 'restore':
+                res.json(req.body);
+                break;
+            default:
+                res.json({ message: 'Action is invalid' });
+        }
     }
 }
 
